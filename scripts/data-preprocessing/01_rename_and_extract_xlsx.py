@@ -1,39 +1,48 @@
 from pathlib import Path
 import shutil
 
-BASE_PATH = "./data/01-raw"
-COPY_PATH = "./data/02-raw"
-
+# PEP 8: Constants at the top
+BASE_PATH = Path("./data/01-raw")
+PROCESSED_PATH = Path("./data/02-interim")
 CURRENT_YEAR = "2025"
 
-client_name = BASE_PATH.name
 
-def rename_xlsx(folder: Path, year: str):
-    for file in folder.glob("*.xlsx"):
-        new_name = f"{year} - {file.stem}.xlsx"
-        new_path = file.with_name(new_name)
-        if not new_path.exists():
-            file.rename(new_path)
-        else:
-            print(f"⚠️ Skipped (already exists): {new_path.name}")
+# PEP 8: Two blank lines before top-level functions 
+def process_and_copy_file(file_path: Path, dest_folder: Path, year: str = None):
+    """
+    Copies a file to the destination with a new name.
+    Does NOT modify the source file.
+    """
+    # Fix naming logic
+    if year:
+        new_name = f"{year} - {file_path.name}"
+    else:
+        new_name = file_path.name
 
-def copy_xlsx(src_folder: Path, dest_folder: Path):
-    for file in src_folder.glob("*.xlsx"):
-        dest_file = dest_folder / file.name
+    dest_path = dest_folder / new_name
 
-        if not dest_file.exists():
-            shutil.copy2(file, dest_file)
-        else:
-            print(f"⚠️ Skipped (already exists): {dest_file.name}")
+    if not dest_path.exists():
+        # Create destination folder if it doesn't exist
+        dest_folder.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file_path, dest_path)
+        print(f"✅ Processed: {new_name}")
+    else:
+        print(f"⚠️ Skipped (exists): {new_name}")
 
-for subfolder in BASE_PATH.iterdir():
-    rename_xlsx(subfolder, CURRENT_YEAR)
-    for subfolder_2 in subfolder.iterdir():
-        if subfolder_2.is_dir():
-            rename_xlsx(subfolder_2, subfolder_2.name)
 
-for subfolder in BASE_PATH.iterdir():
-    copy_xlsx(subfolder, COPY_PATH)
-    for subfolder_2 in subfolder.iterdir():
-        if subfolder_2.is_dir():
-            copy_xlsx(subfolder_2, COPY_PATH)
+def main():
+    # Loop through the structure once
+    for subfolder in BASE_PATH.iterdir():
+        if subfolder.is_dir():
+            # Level 1: Add Year
+            for file in subfolder.glob("*.xlsx"):
+                process_and_copy_file(file, PROCESSED_PATH, year=CURRENT_YEAR)
+            
+            # Level 2: Keep original name
+            for subfolder_2 in subfolder.iterdir():
+                if subfolder_2.is_dir():
+                    for file in subfolder_2.glob("*.xlsx"):
+                        process_and_copy_file(file, PROCESSED_PATH, year=subfolder_2.name)
+
+if __name__ == "__main__":
+    main()

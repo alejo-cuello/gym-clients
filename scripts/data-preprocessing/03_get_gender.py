@@ -23,7 +23,7 @@ def clean_text_helper(text: str) -> str:
 def process_gym_data(
     exercises_path: str,
     gender_path: str,
-    output_path: str = "clients_processed.csv"
+    output_path: str = "./data/03-preprocessed/exercises_v2.csv"
 ) -> pd.DataFrame:
     """
     Loads, cleans, and merges gym exercise data with gender data.
@@ -76,27 +76,21 @@ def process_gym_data(
         .apply(clean_text_helper)
     )
 
-    # --- 4. Group and Merge (The Robust Approach) ---
-    # Group exercises by client, taking the first instance of metadata
-    clients_grouped = df_exercises.groupby("client_name_clean").first().reset_index()
-
     # Merge logic replaces the loop/sort logic.
     # We use a LEFT join to keep all exercise clients, adding gender where matches found.
     final_df = pd.merge(
         df_exercises,
-        df_gender[["client_name_clean", "gender"]],
+        df_gender[["client_name_clean", "gender"]].drop_duplicates(subset="client_name_clean"),
         on="client_name_clean",
         how="left"
     )
 
-    # --- 5. Output ---
+    # --- 4. Output ---
     print(f"Processed {len(df_exercises)} rows.")
-    print(f"Generated {len(final_df)} unique clients.")
-    
     # Check for missing genders (equivalent to your mismatch print loop)
     missing_gender_count = final_df["gender"].isna().sum()
     if missing_gender_count > 0:
-        print(f"Warning: {missing_gender_count} clients did not match the gender database.")
+        print(f"Warning: {missing_gender_count} rows did not match the gender database.")
         print(final_df[final_df["gender"].isna()])
 
     final_df.to_csv(output_path, index=False)
@@ -106,8 +100,8 @@ def process_gym_data(
 
 if __name__ == "__main__":
     # Define paths
-    EXERCISES_FILE = "../data/03-preprocessed/exercises.csv"
-    GENDER_FILE = "../data/00-utils/clients_gender.csv"
+    EXERCISES_FILE = "./data/03-preprocessed/exercises_v1.csv"
+    GENDER_FILE = "./data/01-raw/clients_gender.csv"
     
     # Execute
     # [cite: 323] Always have the same amount of whitespace on both sides of a binary operator

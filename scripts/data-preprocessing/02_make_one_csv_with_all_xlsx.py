@@ -2,20 +2,19 @@ import pandas as pd
 from pathlib import Path
 import re
 
-BASE_PATH = Path("csv")
-OUTPUT_CSV = "exercises.csv"
+BASE_PATH = Path("./data/02-interim")
+OUTPUT_CSV = "./data/03-preprocessed/exercises_v1.csv"
 
 rows = []
 
 for excel_file in BASE_PATH.rglob("*.xlsx"):
+    print(f"Processing: {excel_file}")
     df = pd.read_excel(excel_file, header=None)
 
     # --- Metadata (adjust cell positions if needed) ---
     client = df.iloc[2, 1]          # "NOMBRE Y APELLIDO"
     raw_date = df.iloc[3, 1]        # FECHA
     observations = df.iloc[4, 1]
-
-    # date = pd.to_datetime(raw_date, dayfirst=True)
 
     # --- Weeks column positions ---
     semana_1 = {
