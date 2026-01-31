@@ -1,2 +1,4 @@
-data
+data/01-raw
+data/02-interim
+data/03-preprocessed
 .venv
