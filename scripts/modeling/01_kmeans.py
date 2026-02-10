@@ -18,7 +18,7 @@ args = parser.parse_args()
 
 # Define paths
 INPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
-OUTPUT_FILE = os.path.join("data", "04-processed", "client_features_kmeans_"+ str(args.clusters) +"_clusters.csv")
+OUTPUT_FILE = os.path.join("data", "05-clustering", "client_features_kmeans_"+ str(args.clusters) +"_clusters.csv")
 
 def main():
     print("Loading data...")
