@@ -7,8 +7,8 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 
 # Define paths
 INPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
-# OUTPUT_FILE = os.path.join("data", "05-clustering", "dendogram.png")
-OUTPUT_FILE = os.path.join("data", "05-clustering", "client_features_hierarchical.csv")
+OUTPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
+OUTPUT_FILE_DENDOGRAM = os.path.join("data", "05-clustering", "dendogram.png")
 
 def apply_hierarchical_clustering(features_df, scaled_data, n_clusters):
     """
@@ -24,43 +24,28 @@ def apply_hierarchical_clustering(features_df, scaled_data, n_clusters):
     # Fit and predict to get the cluster labels
     # Labels are assigned to each client in the same order as input
     cluster_labels = model.fit_predict(scaled_data)
-    
-    # Add the labels back to the original dataframe for business analysis
-    features_df['cluster_id'] = cluster_labels
-    
-    return features_df
+        
+    return cluster_labels
 
 def main():
     print("Loading data...")
     df = pd.read_csv(INPUT_FILE)
-    
-    print("Preprocessing data...")
-    features = df[['average_of_days_per_routine', 'routines_count']].copy()
-    
-    # Encode gender: M=0, F=1 (if there are other values, they will need handling, but assuming binary for now based on glimpse)
-    features['gender_encoded'] = df['gender'].map({'M': 0, 'F': 1})
-    # Fill NaN if any (just in case)
-    features['gender_encoded'] = features['gender_encoded'].fillna(-1) 
-    
-    # Months diff: get the difference between the first and last month.
-    df['last_month'] = pd.to_datetime(df['last_month'])
-    df['cohort_month'] = pd.to_datetime(df['cohort_month'])
-    features['months_diff'] = (df['last_month'].dt.year - df['cohort_month'].dt.year) * 12 + (df['last_month'].dt.month - df['cohort_month'].dt.month)
+    features = df[['average_of_days_per_routine','routines_count','gender_encoded','months_diff']]
     
     # Scale features
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(features)
 
     # After analyzing the dendogram, I decide to split into 3 clusters
-    df = apply_hierarchical_clustering(features, scaled_features, 3)
+    df['hierarchical_cluster'] = apply_hierarchical_clustering(features, scaled_features, 3)
 
     # Save results
     print(f"Saving results to {OUTPUT_FILE}...")
     df.to_csv(OUTPUT_FILE, index=False)
     
-    # Print summary
-    print("Cluster distribution:")
-    print(df['cluster_id'].value_counts().sort_index())
+    # # Print summary
+    # print("Cluster distribution:")
+    # print(df['hierarchical_cluster'].value_counts().sort_index())
 
     # # Compute linkage matrix
     # print("Computing linkage matrix...")
@@ -76,8 +61,8 @@ def main():
 
     # Save the figure to a file
     # Ensure no spaces around '=' for keyword arguments 
-    # plt.savefig(OUTPUT_FILE, dpi=300, bbox_inches='tight')
-    # print(f"Dendrogram saved successfully to {OUTPUT_FILE}")
+    # plt.savefig(OUTPUT_FILE_DENDOGRAM, dpi=300, bbox_inches='tight')
+    # print(f"Dendrogram saved successfully to {OUTPUT_FILE_DENDOGRAM}")
 
 if __name__ == "__main__":
     main()

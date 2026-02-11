@@ -8,7 +8,7 @@ import os
 
 # Define paths
 INPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
-OUTPUT_FILE = os.path.join("data", "05-clustering", "client_features_dbscan.csv")
+OUTPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
 OUTPUT_FILE_K_DISTANCE = os.path.join("data", "05-clustering", "k_distance.png")
 
 def find_optimal_epsilon(scaled_data, k=4):
@@ -36,24 +36,12 @@ def find_optimal_epsilon(scaled_data, k=4):
 def main():
     print("Loading data...")
     df = pd.read_csv(INPUT_FILE)
+    features = df[['average_of_days_per_routine','routines_count','gender_encoded','months_diff']]
     
-    # Preprocessing
-    print("Preprocessing data...")
-    features = df[['average_of_days_per_routine', 'routines_count']].copy()
-    
-    # Encode gender
-    features['gender_encoded'] = df['gender'].map({'M': 0, 'F': 1})
-    features['gender_encoded'] = features['gender_encoded'].fillna(-1)
-    
-    # Months diff: get the difference between the first and last month.
-    df['last_month'] = pd.to_datetime(df['last_month'])
-    df['cohort_month'] = pd.to_datetime(df['cohort_month'])
-    features['months_diff'] = (df['last_month'].dt.year - df['cohort_month'].dt.year) * 12 + (df['last_month'].dt.month - df['cohort_month'].dt.month)
-
     # Scale features
     scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(features)
-    
+    scaled_features = scaler.fit_transform(features)    
+
     # Used to find the best epsilon value
     # find_optimal_epsilon(scaled_features, 2*len(features.columns))
 

@@ -18,30 +18,17 @@ args = parser.parse_args()
 
 # Define paths
 INPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
-OUTPUT_FILE = os.path.join("data", "05-clustering", "client_features_kmeans_"+ str(args.clusters) +"_clusters.csv")
+OUTPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
 
 def main():
     print("Loading data...")
     df = pd.read_csv(INPUT_FILE)
-    
-    # Preprocessing
-    print("Preprocessing data...")
-    features = df[['average_of_days_per_routine', 'routines_count']].copy()
-    
-    # Encode gender: M=0, F=1 (if there are other values, they will need handling, but assuming binary for now based on glimpse)
-    features['gender_encoded'] = df['gender'].map({'M': 0, 'F': 1})
-    # Fill NaN if any (just in case)
-    features['gender_encoded'] = features['gender_encoded'].fillna(-1) 
-    
-    # Months diff: get the difference between the first and last month.
-    df['last_month'] = pd.to_datetime(df['last_month'])
-    df['cohort_month'] = pd.to_datetime(df['cohort_month'])
-    features['months_diff'] = (df['last_month'].dt.year - df['cohort_month'].dt.year) * 12 + (df['last_month'].dt.month - df['cohort_month'].dt.month)
+    features = df[['average_of_days_per_routine','routines_count','gender_encoded','months_diff']]
 
     # Scale features
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(features)
-    
+
     # Apply K-Means
     print("Applying K-Means clustering...")
 
@@ -74,7 +61,7 @@ def main():
     # kmeans = KMeans(n_clusters=best_k, random_state=42, n_init=10)
 
     kmeans = KMeans(n_clusters=args.clusters, random_state=42, n_init=10)
-    df['kmeans_cluster'] = kmeans.fit_predict(scaled_features)
+    df[f'kmeans_cluster_{args.clusters}'] = kmeans.fit_predict(scaled_features)
     
     # Save results
     print(f"Saving results to {OUTPUT_FILE}...")
@@ -82,7 +69,7 @@ def main():
     
     # Print summary
     print("Cluster distribution:")
-    print(df['kmeans_cluster'].value_counts().sort_index())
+    print(df[f'kmeans_cluster_{args.clusters}'].value_counts().sort_index())
 
 if __name__ == "__main__":
     main()
