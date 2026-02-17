@@ -1,7 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+import argparse
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.cluster import AgglomerativeClustering
 from scipy.cluster.hierarchy import dendrogram, linkage
 
@@ -28,6 +30,10 @@ def apply_hierarchical_clustering(features_df, scaled_data, n_clusters):
     return cluster_labels
 
 def main():
+    parser = argparse.ArgumentParser(description="Hierarchical Clustering")
+    parser.add_argument('--pca', action='store_true', help='Apply PCA before clustering')
+    args = parser.parse_args()
+
     print("Loading data...")
     df = pd.read_csv(INPUT_FILE)
     features = df[['average_of_days_per_routine','routines_count','gender_encoded','months_diff']]
@@ -36,16 +42,28 @@ def main():
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(features)
 
+    # Apply PCA if requested
+    if args.pca:
+        print("Applying PCA...")
+        pca = PCA(n_components=3)
+        scaled_features = pca.fit_transform(scaled_features)
+        for i, variance in enumerate(pca.explained_variance_ratio_.cumsum()):
+            print(f"Cumulative variance of PCA column {i+1}: {variance:.4f}")
+
     # After analyzing the dendogram, I decide to split into 3 clusters
-    df['hierarchical_cluster'] = apply_hierarchical_clustering(features, scaled_features, 3)
+    col_name = 'hierarchical_cluster'
+    if args.pca:
+        col_name += '_pca'
+    
+    df[col_name] = apply_hierarchical_clustering(features, scaled_features, 3)
 
     # Save results
     print(f"Saving results to {OUTPUT_FILE}...")
     df.to_csv(OUTPUT_FILE, index=False)
     
     # # Print summary
-    # print("Cluster distribution:")
-    # print(df['hierarchical_cluster'].value_counts().sort_index())
+    print("Cluster distribution:")
+    print(df[col_name].value_counts().sort_index())
 
     # # Compute linkage matrix
     # print("Computing linkage matrix...")

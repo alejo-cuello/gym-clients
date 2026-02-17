@@ -4,12 +4,14 @@ import os
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 # Initialize the parser
 parser = argparse.ArgumentParser(description="KMeans Clustering")
 
 # Define the argument for clusters
 parser.add_argument('--clusters', type=int, default=3, help='Number of clusters')
+parser.add_argument('--pca', action='store_true', help='Apply PCA before clustering')
 # To indicate the number of clusters, you should run: 
 #   py scripts/modeling/01_kmeans.py --clusters 5
 
@@ -28,6 +30,14 @@ def main():
     # Scale features
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(features)
+
+    # Apply PCA if requested
+    if args.pca:
+        print("Applying PCA...")
+        pca = PCA(n_components=3)
+        scaled_features = pca.fit_transform(scaled_features)
+        for i, variance in enumerate(pca.explained_variance_ratio_.cumsum()):
+            print(f"Cumulative variance of PCA column {i+1}: {variance:.4f}")
 
     # Apply K-Means
     print("Applying K-Means clustering...")
@@ -61,7 +71,12 @@ def main():
     # kmeans = KMeans(n_clusters=best_k, random_state=42, n_init=10)
 
     kmeans = KMeans(n_clusters=args.clusters, random_state=42, n_init=10)
-    df[f'kmeans_cluster_{args.clusters}'] = kmeans.fit_predict(scaled_features)
+    
+    col_name = f'kmeans_cluster_{args.clusters}'
+    if args.pca:
+        col_name += '_pca'
+
+    df[col_name] = kmeans.fit_predict(scaled_features)
     
     # Save results
     print(f"Saving results to {OUTPUT_FILE}...")
@@ -69,7 +84,7 @@ def main():
     
     # Print summary
     print("Cluster distribution:")
-    print(df[f'kmeans_cluster_{args.clusters}'].value_counts().sort_index())
+    print(df[col_name].value_counts().sort_index())
 
 if __name__ == "__main__":
     main()

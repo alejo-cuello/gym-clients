@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import argparse
 import os
 
 # Define paths
@@ -34,6 +36,10 @@ def find_optimal_epsilon(scaled_data, k=4):
     plt.savefig(OUTPUT_FILE_K_DISTANCE, dpi=300, bbox_inches='tight')
 
 def main():
+    parser = argparse.ArgumentParser(description="DBSCAN Clustering")
+    parser.add_argument('--pca', action='store_true', help='Apply PCA before clustering')
+    args = parser.parse_args()
+
     print("Loading data...")
     df = pd.read_csv(INPUT_FILE)
     features = df[['average_of_days_per_routine','routines_count','gender_encoded','months_diff']]
@@ -41,6 +47,14 @@ def main():
     # Scale features
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(features)    
+
+    # Apply PCA if requested
+    if args.pca:
+        print("Applying PCA...")
+        pca = PCA(n_components=3)
+        scaled_features = pca.fit_transform(scaled_features)
+        for i, variance in enumerate(pca.explained_variance_ratio_.cumsum()):
+            print(f"Cumulative variance of PCA column {i+1}: {variance:.4f}")
 
     # Used to find the best epsilon value
     # find_optimal_epsilon(scaled_features, 2*len(features.columns))
@@ -53,7 +67,10 @@ def main():
     clusters = dbscan.fit_predict(scaled_features)
     
     # Add clusters to original dataframe
-    df['dbscan_cluster'] = clusters
+    col_name = 'dbscan_cluster'
+    if args.pca:
+        col_name += '_pca'
+    df[col_name] = clusters
     
     # Save results
     print(f"Saving results to {OUTPUT_FILE}...")
@@ -61,7 +78,7 @@ def main():
     
     # Print summary
     print("Cluster distribution (-1 indicates noise):")
-    print(df['dbscan_cluster'].value_counts().sort_index())
+    print(df[col_name].value_counts().sort_index())
 
 if __name__ == "__main__":
     main()
