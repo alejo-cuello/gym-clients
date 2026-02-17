@@ -38,11 +38,12 @@ def find_optimal_epsilon(scaled_data, k=4):
 def main():
     parser = argparse.ArgumentParser(description="DBSCAN Clustering")
     parser.add_argument('--pca', action='store_true', help='Apply PCA before clustering')
+    parser.add_argument('--epsilon', action='store_true', help='Get epsilon values instead of clustering')
     args = parser.parse_args()
 
     print("Loading data...")
     df = pd.read_csv(INPUT_FILE)
-    features = df[['average_of_days_per_routine','routines_count','gender_encoded','months_diff']]
+    features = df[['average_of_days_per_routine','routines_count','gender_encoded','tenure_months','recency_months']]
     
     # Scale features
     scaler = StandardScaler()
@@ -56,29 +57,31 @@ def main():
         for i, variance in enumerate(pca.explained_variance_ratio_.cumsum()):
             print(f"Cumulative variance of PCA column {i+1}: {variance:.4f}")
 
-    # Used to find the best epsilon value
-    # find_optimal_epsilon(scaled_features, 2*len(features.columns))
-
-    # Apply DBSCAN
-    print("Applying DBSCAN clustering...")
-    # eps: The maximum distance between two samples for one to be considered as in the neighborhood of the other.
-    # min_samples: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.
-    dbscan = DBSCAN(eps=0.75, min_samples=2*len(features.columns))
-    clusters = dbscan.fit_predict(scaled_features)
-    
-    # Add clusters to original dataframe
-    col_name = 'dbscan_cluster'
-    if args.pca:
-        col_name += '_pca'
-    df[col_name] = clusters
-    
-    # Save results
-    print(f"Saving results to {OUTPUT_FILE}...")
-    df.to_csv(OUTPUT_FILE, index=False)
-    
-    # Print summary
-    print("Cluster distribution (-1 indicates noise):")
-    print(df[col_name].value_counts().sort_index())
+    if args.epsilon:
+        find_optimal_epsilon(scaled_features, 2*len(features.columns))
+        # Without PCA: 1.2
+        # With PCA: 0.6
+    else:
+        # Apply DBSCAN
+        print("Applying DBSCAN clustering...")
+        # eps: The maximum distance between two samples for one to be considered as in the neighborhood of the other.
+        # min_samples: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.
+        dbscan = DBSCAN(eps=0.6, min_samples=2*len(features.columns))
+        clusters = dbscan.fit_predict(scaled_features)
+        
+        # Add clusters to original dataframe
+        col_name = 'dbscan_cluster'
+        if args.pca:
+            col_name += '_pca'
+        df[col_name] = clusters
+        
+        # Save results
+        print(f"Saving results to {OUTPUT_FILE}...")
+        df.to_csv(OUTPUT_FILE, index=False)
+        
+        # Print summary
+        print("Cluster distribution (-1 indicates noise):")
+        print(df[col_name].value_counts().sort_index())
 
 if __name__ == "__main__":
     main()

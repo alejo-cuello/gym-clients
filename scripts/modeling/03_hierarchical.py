@@ -12,7 +12,7 @@ INPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
 OUTPUT_FILE = os.path.join("data", "04-processed", "client_features.csv")
 OUTPUT_FILE_DENDOGRAM = os.path.join("data", "05-clustering", "dendogram.png")
 
-def apply_hierarchical_clustering(features_df, scaled_data, n_clusters):
+def apply_hierarchical_clustering(scaled_data, n_clusters):
     """
     Applies the final clustering based on the dendrogram analysis.
     """
@@ -32,11 +32,12 @@ def apply_hierarchical_clustering(features_df, scaled_data, n_clusters):
 def main():
     parser = argparse.ArgumentParser(description="Hierarchical Clustering")
     parser.add_argument('--pca', action='store_true', help='Apply PCA before clustering')
+    parser.add_argument('--dendogram', action='store_true', help='Get dendogram instead of clustering')
     args = parser.parse_args()
 
     print("Loading data...")
     df = pd.read_csv(INPUT_FILE)
-    features = df[['average_of_days_per_routine','routines_count','gender_encoded','months_diff']]
+    features = df[['average_of_days_per_routine','routines_count','gender_encoded','tenure_months','recency_months']]
     
     # Scale features
     scaler = StandardScaler()
@@ -50,37 +51,38 @@ def main():
         for i, variance in enumerate(pca.explained_variance_ratio_.cumsum()):
             print(f"Cumulative variance of PCA column {i+1}: {variance:.4f}")
 
-    # After analyzing the dendogram, I decide to split into 3 clusters
-    col_name = 'hierarchical_cluster'
-    if args.pca:
-        col_name += '_pca'
-    
-    df[col_name] = apply_hierarchical_clustering(features, scaled_features, 3)
+    if args.dendogram:
+        # Compute linkage matrix
+        print("Computing linkage matrix...")
+        linked = linkage(scaled_features, method='ward')
 
-    # Save results
-    print(f"Saving results to {OUTPUT_FILE}...")
-    df.to_csv(OUTPUT_FILE, index=False)
-    
-    # # Print summary
-    print("Cluster distribution:")
-    print(df[col_name].value_counts().sort_index())
+        # Plot and save dendrogram
+        plt.figure(figsize=(12, 8))
+        dendrogram(linked)
 
-    # # Compute linkage matrix
-    # print("Computing linkage matrix...")
-    # linked = linkage(scaled_features, method='ward')
+        plt.title('Hierarchical Clustering Dendrogram (Gym Clients)')
+        plt.xlabel('Client Index or (Cluster Size)')
+        plt.ylabel('Distance (Ward)')
 
-    # # Plot and save dendrogram
-    # plt.figure(figsize=(12, 8))
-    # dendrogram(linked)
+        # Save the figure to a file
+        # Ensure no spaces around '=' for keyword arguments 
+        plt.savefig(OUTPUT_FILE_DENDOGRAM, dpi=300, bbox_inches='tight')
+        print(f"Dendrogram saved successfully to {OUTPUT_FILE_DENDOGRAM}")
+    else:
+        # After analyzing the dendogram, I decide to split into 3 clusters
+        col_name = 'hierarchical_cluster'
+        if args.pca:
+            col_name += '_pca'
+        
+        df[col_name] = apply_hierarchical_clustering(scaled_features, 3)
 
-    # plt.title('Hierarchical Clustering Dendrogram (Gym Clients)')
-    # plt.xlabel('Client Index or (Cluster Size)')
-    # plt.ylabel('Distance (Ward)')
-
-    # Save the figure to a file
-    # Ensure no spaces around '=' for keyword arguments 
-    # plt.savefig(OUTPUT_FILE_DENDOGRAM, dpi=300, bbox_inches='tight')
-    # print(f"Dendrogram saved successfully to {OUTPUT_FILE_DENDOGRAM}")
+        # Save results
+        print(f"Saving results to {OUTPUT_FILE}...")
+        df.to_csv(OUTPUT_FILE, index=False)
+        
+        # # Print summary
+        print("Cluster distribution:")
+        print(df[col_name].value_counts().sort_index())
 
 if __name__ == "__main__":
     main()

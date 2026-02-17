@@ -34,7 +34,7 @@ gym-clients/
     -   Feature engineering (generating `client_id`, extracting temporal features).
 
 2.  **Cluster Analysis**:
-    -   Grouping clients based on `average_of_days_per_routine`, `routines_count`, and `months_diff`.
+    -   Grouping clients based on `average_of_days_per_routine`,`routines_count`,`gender_encoded`,`tenure_months`,`recency_months`.
     -   Evaluation of clusters using K-Means, DBSCAN, and Hierarchical methods.
 
 
